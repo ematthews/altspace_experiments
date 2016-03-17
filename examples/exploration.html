@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Exploration</title>
+	<script src="http://sdk.altvr.com/libs/three.js/r73/build/three.js"></script>
+	<!-- <script src="../dist/altspace.js"></script> -->
+	<script src="http://sdk.altvr.com/libs/altspace.js/0.5.3/altspace.min.js"></script>
+</head>
+<body>
+<script>
+	Exploration = (function(){
+
+		var sim;
+		var instanceRef;
+		var sceneSync;
+
+		var board;
+		var blocks = [];
+		var gameObjects = new THREE.Group();
+
+		var CONFIG = Object.freeze({
+			boardSize: 700,
+			tableHeight: 0,
+			dragPlaneSize: 1000,
+			towers: 3,
+			tiles: 10,
+			board: {width: 50, height: 1}
+		});
+
+		var modelScale = CONFIG.boardSize / 8 / CONFIG.pieceWidth;
+		var boardScale = CONFIG.boardSize / CONFIG.board.width;
+
+		function main() {
+			var inCodePen = altspace.utilities.codePen.inCodePen;
+			sim = altspace.utilities.Simulation();
+			altspace.utilities.sync.connect({
+				appId: "Towers",
+				authorId: inCodePen ? altspace.utilities.codePen.getAuthorId() : 'AltspaceVR',
+				instanceId: inCodePen ? altspace.utilities.codePen.getPenId() : null
+			}).then(function(connection){
+				instanceRef = connection.instance;
+
+				if (altspace.inClient) {
+					altspace.getEnclosure().then(function(enclosure){ 
+						gameObjects.position.y -= enclosure.innerHeight / 2;
+					});	
+				} else {
+					sim.camera.position.z = CONFIG.boardSize;
+					sim.camera.position.y = CONFIG.boardSize + 100;
+					sim.camera.lookAt(sim.scene.position);
+				}
+
+				loadBoard();
+				loadTiles();
+				loadTowers();
+			});
+		}
+
+		function createBase(color, position) {
+			var geometry = new THREE.CubeGeometry(300, 50, 300);
+			var material = new THREE.MeshBasicMaterial({color: color});
+			var mesh = new THREE.Mesh(geometry, material);
+			// mesh.scale.set(boardScale, boardScale, boardScale);
+			mesh.position.y = CONFIG.tableHeight + (CONFIG.board.height * boardScale / 2);
+			mesh.position.x += position;
+			var edges = new THREE.EdgesHelper(mesh, 0x00ff00);
+			gameObjects.add(mesh);
+			gameObjects.add(edges);
+			sim.scene.add(gameObjects);			
+		}
+
+		function createTile(ops = {}) {
+			var geometry = new THREE.CubeGeometry(ops.x, ops.y, ops.z);
+			var material = new THREE.MeshBasicMaterial({color: ops.color});
+			var mesh = new THREE.Mesh(geometry, material);
+			// mesh.scale.set(boardScale, boardScale, boardScale);
+			mesh.position.y = CONFIG.tableHeight + (CONFIG.board.height * boardScale / 2) + ops.position;
+			mesh.position.x -= 300;
+			var edges = new THREE.EdgesHelper(mesh, 0x00ff00);
+			gameObjects.add(mesh);
+			gameObjects.add(edges);
+			sim.scene.add(gameObjects);	
+		}
+
+		function createTower(ops = {}) {
+			var geometry = new THREE.CylinderGeometry(
+				ops.radiusTop, 
+				ops.radiusBottom, 
+				ops.height);
+			var material = new THREE.MeshBasicMaterial({color: "blue"});
+			var cylinder = new THREE.Mesh(geometry, material);
+			cylinder.position.y = CONFIG.tableHeight + (CONFIG.board.height * boardScale / 2) + ops.position;
+			cylinder.position.x -= ops.offset;
+			gameObjects.add(cylinder);
+			sim.scene.add(gameObjects);
+		}
+
+		function loadBoard() {
+			for (var i = -1; i <= 1; i++) {
+				var position = i * 300;
+				createBase(0xff0000, position);
+			}			
+		}
+
+		function loadTiles() {
+			for (var i = 0; i < CONFIG.tiles; i++) {
+				var baseY = (i * 25) + 50;
+				var baseXZ = 250 - (i * 15);
+				createTile({x: baseXZ, y: 25, z: baseXZ, color: "green", position: baseY});
+			}
+		}
+
+		function loadTowers() {
+			for (var i = -1; i <= 1; i++) {
+				var position = i * 300;
+				createTower({
+					radiusTop: 10,
+					radiusBottom: 10,
+					height: 500,
+					position: 50,
+					offset: position
+				});
+			}
+		}
+
+		return {
+			main: main
+		};
+
+	}());
+
+	Exploration.main();
+</script>
+</body>
+</html>

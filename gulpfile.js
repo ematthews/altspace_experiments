@@ -35,6 +35,7 @@ var gulp = require('gulp'),
     release = require('conventional-github-releaser'),
     runsequence = require('run-sequence'),
     shell = require('gulp-shell'),
+    connect = require("gulp-connect"),
     aws = require('aws-sdk');
 
 var awsRegion = 'us-west-1';
@@ -49,6 +50,14 @@ var docfiles = [
     '!src/utilities/**/*.es6.js',
     'README.md'
 ];
+
+gulp.task("connect", function() {
+
+    connect.server({
+        port: 7878
+    });
+
+});
 
 gulp.task('altspace_js', function () {
     var cwd = './';
